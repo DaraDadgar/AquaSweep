@@ -66,7 +66,7 @@ An open-source Autonomous Surface Vehicle (ASV) designed for aquatic debris coll
 
 | Component | Details |
 |---|---|
-| Main computer | Raspberry Pi (Camera-capable, tested on Pi 4/5) |
+| Main computer | Raspberry Pi (Camera-capable, tested on Pi 5) |
 | Microcontroller | Arduino Uno |
 | RC Receiver | FlySky iBUS-compatible receiver |
 | Thrusters | 2× brushless ESCs (PWM, 1000–2000 µs) |
@@ -74,7 +74,7 @@ An open-source Autonomous Surface Vehicle (ASV) designed for aquatic debris coll
 | Overflow detection | 2× JSN-SR04T waterproof ultrasonic sensors |
 | IMU | Adafruit BNO055 (I2C) |
 | GPS | UART GPS module on `/dev/serial0` |
-| Cameras | 2× Raspberry Pi CSI cameras |
+| Cameras | 2× Raspberry Pi CSI cameras (wide and standard) |
 
 ---
 

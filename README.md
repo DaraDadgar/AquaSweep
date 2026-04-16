@@ -85,18 +85,16 @@ Arduino Uno:
 └── manual_operation.ino      # Arduino Uno firmware (RC control + telemetry output)
 
 Raspberry Pi 5:
-AquaSweep/
 ├── shared_state.py           # Pi orchestrator — launches and monitors all scripts
 ├── VisionRTC.py              # Camera capture, Roboflow inference, RTSP streaming
 ├── telemetry.py              # Sensor reader + WebSocket sender + UDP detection listener
 └── Dependencies.txt          # Full dependency and install reference
 
-Server
-AquaSweepServer
+Server:
 ├── Server.py                 # FastAPI WebSocket relay + MediaMTX launcher (Windows)
-├── Templates
+├── Templates:
 |    └── aquasweep_monitor.html    # Browser dashboard (telemetry, map, video, AI overlay)
-└── MediaMTX
+└── MediaMTX:
     ├── MediaMTX.exe              
     └── MediaMTX.yml
 ```

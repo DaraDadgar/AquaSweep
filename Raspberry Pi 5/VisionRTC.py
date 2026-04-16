@@ -26,7 +26,7 @@ UDP_HOST      = "127.0.0.1"
 UDP_PORT      = 5005
 
 API_URL = "http://localhost:9001"
-API_KEY = "IMM5WLSg3K7H3LuDIOuI"
+API_KEY = "APIKEY" #Insert API Key Here
 
 # ─── Inference client ─────────────────────────────────────────────────────────
 client = InferenceHTTPClient(api_url=API_URL, api_key=API_KEY)

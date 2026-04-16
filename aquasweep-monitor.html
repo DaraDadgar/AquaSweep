@@ -1,0 +1,1969 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>AquaSweep Monitor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --gap: 10px;
+        --rad: 12px;
+        --bg: #060b14;
+        --panel: #0a1220;
+        --panel2: #0d1828;
+        --border: rgba(0, 180, 255, 0.12);
+        --border-bright: rgba(0, 200, 255, 0.35);
+        --accent: #00c8ff;
+        --accent2: #00ffa3;
+        --warn: #ffb347;
+        --danger: #ff4444;
+        --text: #c8dff0;
+        --text-dim: #4a6a8a;
+        --text-bright: #e8f4ff;
+        --glow: 0 0 20px rgba(0, 200, 255, 0.15);
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Exo 2", sans-serif;
+        overflow: hidden;
+      }
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 1000;
+        background: repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 2px,
+          rgba(0, 0, 0, 0.07) 2px,
+          rgba(0, 0, 0, 0.07) 4px
+        );
+      }
+
+      /* Grid: side | video | right-col (data 3fr / map 2fr) */
+      .app {
+        height: 100svh;
+        padding: 10px;
+        display: grid;
+        grid-template-columns: 52px 1fr 210px;
+        grid-template-rows: 3fr 2fr;
+        gap: var(--gap);
+      }
+
+      .seg {
+        border-radius: var(--rad);
+        overflow: hidden;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        position: relative;
+      }
+      .seg::before,
+      .seg::after {
+        content: "";
+        position: absolute;
+        width: 14px;
+        height: 14px;
+        z-index: 2;
+        pointer-events: none;
+      }
+      .seg::before {
+        top: 6px;
+        left: 6px;
+        border-top: 1.5px solid var(--accent);
+        border-left: 1.5px solid var(--accent);
+        border-radius: 3px 0 0 0;
+      }
+      .seg::after {
+        bottom: 6px;
+        right: 6px;
+        border-bottom: 1.5px solid var(--accent);
+        border-right: 1.5px solid var(--accent);
+        border-radius: 0 0 3px 0;
+      }
+
+      /* ── MENU ── */
+      .seg-menu {
+        grid-column: 1;
+        grid-row: 1 / span 2;
+        background: transparent;
+        border-color: transparent;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 0;
+      }
+      .seg-menu::before,
+      .seg-menu::after {
+        display: none;
+      }
+
+      .menu-logo {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, var(--accent), #0060a0);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 8px;
+        box-shadow: 0 0 18px rgba(0, 200, 255, 0.4);
+        flex-shrink: 0;
+      }
+      .menu-logo svg {
+        width: 22px;
+        height: 22px;
+      }
+      .menu-divider {
+        width: 28px;
+        height: 1px;
+        background: var(--border-bright);
+        margin: 4px 0;
+        flex-shrink: 0;
+      }
+      .menu-btn {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: rgba(0, 200, 255, 0.06);
+        border: 1px solid var(--border);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        position: relative;
+        flex-shrink: 0;
+      }
+      .menu-btn svg {
+        width: 18px;
+        height: 18px;
+        color: var(--text-dim);
+        transition: color 0.2s;
+      }
+      .menu-btn:hover,
+      .menu-btn.active {
+        background: rgba(0, 200, 255, 0.15);
+        border-color: var(--accent);
+        box-shadow: 0 0 12px rgba(0, 200, 255, 0.3);
+      }
+      .menu-btn:hover svg,
+      .menu-btn.active svg {
+        color: var(--accent);
+      }
+      .menu-btn .tooltip {
+        position: absolute;
+        left: calc(100% + 8px);
+        background: var(--panel2);
+        border: 1px solid var(--border-bright);
+        color: var(--text-bright);
+        font-size: 10px;
+        font-family: "Share Tech Mono", monospace;
+        padding: 4px 8px;
+        border-radius: 5px;
+        white-space: nowrap;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.15s;
+        z-index: 99;
+      }
+      .menu-btn:hover .tooltip {
+        opacity: 1;
+      }
+      .menu-spacer {
+        flex: 1;
+      }
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--accent2);
+        box-shadow: 0 0 8px var(--accent2);
+        animation: pulse-dot 2s infinite;
+        flex-shrink: 0;
+        margin-bottom: 4px;
+      }
+      @keyframes pulse-dot {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.4;
+        }
+      }
+      .signal-bars {
+        display: flex;
+        align-items: flex-end;
+        gap: 2px;
+        height: 14px;
+      }
+      .signal-bar {
+        width: 3px;
+        background: var(--accent);
+        border-radius: 1px;
+        opacity: 0.3;
+      }
+      .signal-bar.active {
+        opacity: 1;
+      }
+      .signal-bar:nth-child(1) {
+        height: 4px;
+      }
+      .signal-bar:nth-child(2) {
+        height: 7px;
+      }
+      .signal-bar:nth-child(3) {
+        height: 10px;
+      }
+      .signal-bar:nth-child(4) {
+        height: 13px;
+      }
+
+      /* ── VIDEO ── */
+      .seg-video {
+        grid-column: 2;
+        grid-row: 1 / span 2;
+        background: #000;
+      }
+      .video-inner {
+        width: 100%;
+        height: 100%;
+        position: relative;
+      }
+      video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        background: #000;
+      }
+      .video-hud {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+      .hud-top {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        right: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .hud-badge {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 9px;
+        color: var(--accent);
+        background: rgba(0, 10, 20, 0.75);
+        border: 1px solid rgba(0, 200, 255, 0.3);
+        padding: 3px 8px;
+        border-radius: 4px;
+        letter-spacing: 1px;
+      }
+      .hud-badge.live::before {
+        content: "⬤ ";
+        color: var(--danger);
+        font-size: 7px;
+        animation: pulse-dot 1.2s infinite;
+      }
+      .hud-crosshair {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 30px;
+        height: 30px;
+        opacity: 0.4;
+      }
+      .hud-crosshair::before,
+      .hud-crosshair::after {
+        content: "";
+        position: absolute;
+        background: var(--accent);
+      }
+      .hud-crosshair::before {
+        width: 1px;
+        height: 100%;
+        left: 50%;
+        top: 0;
+      }
+      .hud-crosshair::after {
+        width: 100%;
+        height: 1px;
+        top: 50%;
+        left: 0;
+      }
+      .hud-bottom {
+        position: absolute;
+        bottom: 10px;
+        left: 12px;
+        right: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .hud-timestamp {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 9px;
+        color: rgba(0, 200, 255, 0.6);
+      }
+      .video-controls {
+        position: absolute;
+        bottom: 28px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 8px;
+        pointer-events: all;
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+      .video-inner:hover .video-controls {
+        opacity: 1;
+      }
+      .vcbtn {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(0, 10, 20, 0.8);
+        border: 1px solid var(--border-bright);
+        color: var(--accent);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .vcbtn:hover {
+        background: rgba(0, 200, 255, 0.2);
+        box-shadow: var(--glow);
+      }
+      .vcbtn.ai-active {
+        background: rgba(0, 255, 136, 0.15);
+        border-color: #00ff88;
+        color: #00ff88;
+        box-shadow:
+          0 0 8px rgba(0, 255, 136, 0.6),
+          0 0 16px rgba(0, 255, 136, 0.2);
+        animation: ai-pulse 2s ease-in-out infinite;
+      }
+      @keyframes ai-pulse {
+        0%,
+        100% {
+          box-shadow:
+            0 0 8px rgba(0, 255, 136, 0.6),
+            0 0 16px rgba(0, 255, 136, 0.2);
+        }
+        50% {
+          box-shadow:
+            0 0 12px rgba(0, 255, 136, 0.9),
+            0 0 24px rgba(0, 255, 136, 0.4);
+        }
+      }
+      .vcbtn svg {
+        width: 14px;
+        height: 14px;
+      }
+
+      /* ── DATA PANEL ── */
+      .seg-text {
+        grid-column: 3;
+        grid-row: 1;
+        padding: 0;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      .panel-header {
+        padding: 7px 12px 6px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+      }
+      .panel-title {
+        font-family: "Rajdhani", sans-serif;
+        font-weight: 700;
+        font-size: 10px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+      .panel-title-icon {
+        width: 11px;
+        height: 11px;
+        color: var(--accent);
+      }
+
+      /* 2-column metric grid */
+      .data-scroll {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 6px 7px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-auto-rows: min-content;
+        gap: 5px;
+        align-content: start;
+      }
+      .data-scroll::-webkit-scrollbar {
+        width: 2px;
+      }
+      .data-scroll::-webkit-scrollbar-thumb {
+        background: var(--border-bright);
+        border-radius: 2px;
+      }
+
+      .metric-card {
+        background: rgba(0, 200, 255, 0.04);
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        padding: 5px 7px;
+        position: relative;
+        overflow: hidden;
+        min-width: 0;
+      }
+      .metric-card.full {
+        grid-column: 1/-1;
+      }
+      .metric-card::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: var(--accent);
+        opacity: 0.5;
+      }
+      .metric-card.warn::before {
+        background: var(--warn);
+        opacity: 0.9;
+      }
+      .metric-card.danger::before {
+        background: var(--danger);
+        opacity: 1;
+      }
+      .metric-card.active::before {
+        background: var(--accent2);
+        opacity: 1;
+      }
+
+      .metric-label {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 7.5px;
+        color: var(--text-dim);
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        margin-bottom: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .metric-row {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 2px;
+      }
+      .metric-val {
+        font-family: "Rajdhani", sans-serif;
+        font-weight: 700;
+        font-size: 15px;
+        color: var(--text-bright);
+        line-height: 1;
+      }
+      .metric-unit {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 7.5px;
+        color: var(--text-dim);
+        flex-shrink: 0;
+      }
+      .metric-status {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 7px;
+        padding: 1px 3px;
+        border-radius: 3px;
+        flex-shrink: 0;
+      }
+      .metric-status.on {
+        color: var(--accent2);
+        background: rgba(0, 255, 163, 0.1);
+        border: 1px solid rgba(0, 255, 163, 0.25);
+      }
+      .metric-status.off {
+        color: var(--text-dim);
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .metric-status.warn {
+        color: var(--warn);
+        background: rgba(255, 179, 71, 0.1);
+        border: 1px solid rgba(255, 179, 71, 0.25);
+      }
+      .metric-bar {
+        margin-top: 4px;
+        height: 2px;
+        background: rgba(255, 255, 255, 0.07);
+        border-radius: 2px;
+        overflow: hidden;
+      }
+      .metric-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--accent), var(--accent2));
+        border-radius: 2px;
+        transition: width 1s ease;
+      }
+
+      /* Compact compass */
+      .compass-wrap {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .compass {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        border: 1px solid var(--border-bright);
+        position: relative;
+        flex-shrink: 0;
+      }
+      .compass-needle {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 2px;
+        height: 9px;
+        background: linear-gradient(
+          to bottom,
+          var(--danger) 50%,
+          var(--accent) 50%
+        );
+        border-radius: 1px;
+        transform-origin: bottom center;
+        transform: translateX(-50%) translateY(-100%) rotate(-54deg);
+        transition: transform 1s ease;
+      }
+      .compass-center {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: var(--text-dim);
+        transform: translate(-50%, -50%);
+      }
+
+      /* ── MAP ── */
+      .seg-map {
+        grid-column: 3;
+        grid-row: 2;
+      }
+      .map-inner {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        overflow: hidden;
+      }
+      .map-placeholder {
+        width: 100%;
+        height: 100%;
+        background:
+          linear-gradient(rgba(0, 200, 255, 0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0, 200, 255, 0.03) 1px, transparent 1px),
+          radial-gradient(
+            ellipse at 40% 60%,
+            rgba(0, 60, 120, 0.6) 0%,
+            rgba(6, 11, 20, 0.9) 70%
+          );
+        background-size:
+          20px 20px,
+          20px 20px,
+          100% 100%;
+        position: relative;
+      }
+      .map-trail {
+        position: absolute;
+        inset: 0;
+      }
+      .map-boat {
+        position: absolute;
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--accent2);
+        box-shadow:
+          0 0 10px var(--accent2),
+          0 0 20px rgba(0, 255, 163, 0.4);
+        animation: boat-pulse 2s infinite;
+      }
+      @keyframes boat-pulse {
+        0%,
+        100% {
+          box-shadow:
+            0 0 8px var(--accent2),
+            0 0 18px rgba(0, 255, 163, 0.4);
+        }
+        50% {
+          box-shadow:
+            0 0 14px var(--accent2),
+            0 0 32px rgba(0, 255, 163, 0.6);
+          transform: scale(1.15);
+        }
+      }
+      .map-boat::before,
+      .map-boat::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        border-radius: 50%;
+        border: 1px solid rgba(0, 255, 163, 0.4);
+        transform: translate(-50%, -50%);
+        animation: ripple 2.5s infinite;
+      }
+      .map-boat::before {
+        width: 18px;
+        height: 18px;
+      }
+      .map-boat::after {
+        width: 32px;
+        height: 32px;
+        animation-delay: 0.5s;
+      }
+      @keyframes ripple {
+        0% {
+          opacity: 0.8;
+          transform: translate(-50%, -50%) scale(0.6);
+        }
+        100% {
+          opacity: 0;
+          transform: translate(-50%, -50%) scale(1);
+        }
+      }
+      .map-coords {
+        position: absolute;
+        bottom: 6px;
+        left: 8px;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 7.5px;
+        color: rgba(0, 200, 255, 0.5);
+        line-height: 1.5;
+      }
+      .map-zoom-btns {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+      }
+      .zoom-btn {
+        width: 20px;
+        height: 20px;
+        background: rgba(0, 10, 20, 0.8);
+        border: 1px solid var(--border-bright);
+        border-radius: 4px;
+        color: var(--accent);
+        font-size: 14px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.15s;
+        font-family: "Rajdhani", sans-serif;
+      }
+      .zoom-btn:hover {
+        background: rgba(0, 200, 255, 0.15);
+      }
+      .map-label {
+        position: absolute;
+        top: 6px;
+        left: 8px;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 8px;
+        color: rgba(0, 200, 255, 0.3);
+        text-transform: uppercase;
+        letter-spacing: 2px;
+      }
+      .pip-container {
+        position: absolute;
+        bottom: 40px;
+        right: 12px;
+        width: 220px;
+        height: 124px;
+        border: 1.5px solid var(--accent);
+        border-radius: 6px;
+        overflow: hidden;
+        box-shadow: 0 0 16px rgba(0, 200, 255, 0.3);
+        cursor: pointer;
+        z-index: 10;
+        transition: all 0.2s;
+      }
+      .pip-container:hover {
+        border-color: var(--accent2);
+        box-shadow: 0 0 20px rgba(0, 255, 163, 0.4);
+      }
+      .pip-container video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .pip-label {
+        position: absolute;
+        top: 4px;
+        left: 6px;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 8px;
+        color: var(--accent);
+        background: rgba(0, 10, 20, 0.75);
+        border: 1px solid rgba(0, 200, 255, 0.3);
+        padding: 2px 6px;
+        border-radius: 3px;
+        letter-spacing: 1px;
+      }
+      @keyframes val-flash {
+        0%,
+        100% {
+          color: var(--text-bright);
+        }
+        50% {
+          color: var(--accent);
+        }
+      }
+      .val-updating {
+        animation: val-flash 0.5s ease;
+      }
+
+      @media (orientation: portrait) {
+        .app {
+          grid-template-columns: 1fr;
+          grid-template-rows: auto auto auto auto;
+          height: auto;
+          overflow-y: auto;
+        }
+        .seg-menu {
+          grid-column: 1;
+          grid-row: 1;
+          flex-direction: row;
+          height: 52px;
+        }
+        .seg-video {
+          grid-column: 1;
+          grid-row: 2;
+          height: 40vw;
+        }
+        .seg-text {
+          grid-column: 1;
+          grid-row: 3;
+          height: 250px;
+        }
+        .seg-map {
+          grid-column: 1;
+          grid-row: 4;
+          height: 180px;
+        }
+      }
+      /* Google Maps overrides — keeps it dark and borderless */
+      #gmap {
+        border-radius: var(--rad);
+      }
+      #gmap .gm-style {
+        border-radius: var(--rad);
+      }
+      .map-coords {
+        position: absolute;
+        bottom: 6px;
+        left: 8px;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 7.5px;
+        color: rgba(0, 200, 255, 0.7);
+        line-height: 1.5;
+        background: rgba(6, 11, 20, 0.75);
+        padding: 2px 6px;
+        border-radius: 4px;
+        pointer-events: none;
+      }
+      .map-label {
+        position: absolute;
+        top: 6px;
+        left: 8px;
+        font-family: "Share Tech Mono", monospace;
+        font-size: 8px;
+        color: rgba(0, 200, 255, 0.4);
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        pointer-events: none;
+      }
+      /* ── DATA ALERT BANNER ── */
+      .data-alert {
+        position: fixed;
+        top: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 2000;
+        background: rgba(6, 11, 20, 0.95);
+        border: 1px solid var(--danger);
+        border-radius: 8px;
+        padding: 7px 12px;
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        max-width: 320px;
+        width: calc(100vw - 80px);
+        box-shadow: 0 0 20px rgba(255, 68, 68, 0.25);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+      }
+      .data-alert.visible {
+        opacity: 1;
+        pointer-events: all;
+      }
+      .data-alert-icon {
+        color: var(--danger);
+        font-size: 13px;
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+      .data-alert-body {
+        flex: 1;
+        min-width: 0;
+      }
+      .data-alert-title {
+        font-family: "Rajdhani", sans-serif;
+        font-weight: 700;
+        font-size: 11px;
+        letter-spacing: 1.5px;
+        color: var(--danger);
+        text-transform: uppercase;
+        margin-bottom: 3px;
+      }
+      .data-alert-fields {
+        font-family: "Share Tech Mono", monospace;
+        font-size: 9px;
+        color: var(--warn);
+        line-height: 1.6;
+      }
+      .data-alert-close {
+        background: none;
+        border: none;
+        color: var(--text-dim);
+        font-size: 14px;
+        cursor: pointer;
+        padding: 0;
+        flex-shrink: 0;
+        line-height: 1;
+        margin-top: -1px;
+      }
+      .data-alert-close:hover {
+        color: var(--text-bright);
+      }
+    </style>
+    <!-- Replace YOUR_API_KEY with your actual Google Maps API key -->
+    <script
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAv2v6l7jvhYOQ4LgPosrZna4L_sU7ZjIc&callback=initMap"
+      async
+      defer
+    ></script>
+  </head>
+  <body>
+    <main class="app">
+      <!-- ── DATA ALERT BANNER ── -->
+      <div class="data-alert" id="dataAlert" role="alert">
+        <span class="data-alert-icon">⚠</span>
+        <div class="data-alert-body">
+          <div class="data-alert-title">Missing Data</div>
+          <div class="data-alert-fields" id="dataAlertFields"></div>
+        </div>
+        <button
+          class="data-alert-close"
+          onclick="dismissAlert()"
+          title="Dismiss"
+        >
+          ✕
+        </button>
+      </div>
+      <!-- ── SIDE MENU ── -->
+      <section class="seg seg-menu" aria-label="Navigation">
+        <div class="menu-logo">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="white"
+            stroke-width="1.8"
+            stroke-linecap="round"
+          >
+            <path d="M3 17l3-8 6 2 6-2 3 8" />
+            <path d="M2 19c2 1.5 5 1.5 7 0s5-1.5 7 0l2 1" />
+            <line x1="12" y1="11" x2="12" y2="4" />
+            <line x1="9" y1="6" x2="15" y2="6" />
+          </svg>
+        </div>
+        <div class="menu-divider"></div>
+        <button class="menu-btn active" onclick="setView(this)">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+          >
+            <rect x="2" y="7" width="15" height="10" rx="2" />
+            <path d="M17 9l5-2v10l-5-2" />
+          </svg>
+          <span class="tooltip">CAMERA</span>
+        </button>
+        <button class="menu-btn" onclick="setView(this)">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+          >
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+          </svg>
+          <span class="tooltip">TELEMETRY</span>
+        </button>
+        <button class="menu-btn" onclick="setView(this)">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+          >
+            <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21" />
+            <line x1="9" y1="3" x2="9" y2="18" />
+            <line x1="15" y1="6" x2="15" y2="21" />
+          </svg>
+          <span class="tooltip">MAP</span>
+        </button>
+        <button class="menu-btn" onclick="setView(this)">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+          >
+            <circle cx="12" cy="12" r="3" />
+            <path
+              d="M12 1v3M12 20v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M1 12h3M20 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"
+            />
+          </svg>
+          <span class="tooltip">SETTINGS</span>
+        </button>
+        <div class="menu-spacer"></div>
+        <div
+          style="
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            padding-bottom: 4px;
+          "
+        >
+          <div class="signal-bars">
+            <div class="signal-bar active"></div>
+            <div class="signal-bar active"></div>
+            <div class="signal-bar active"></div>
+            <div class="signal-bar"></div>
+          </div>
+          <div class="status-dot"></div>
+        </div>
+      </section>
+
+      <!-- ── VIDEO ── -->
+      <section class="seg seg-video" aria-label="Camera feed">
+        <div class="video-inner">
+          <video
+            id="cam0"
+            playsinline
+            muted
+            autoplay
+            preload="metadata"
+          ></video>
+          <canvas
+            id="aiCanvas"
+            style="
+              position: absolute;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              pointer-events: none;
+              z-index: 5;
+              display: none;
+            "
+          ></canvas>
+          <div class="pip-container" id="pipContainer">
+            <video
+              id="cam1"
+              playsinline
+              muted
+              autoplay
+              preload="metadata"
+            ></video>
+            <span class="pip-label">CAM 2</span>
+          </div>
+          <div class="video-hud">
+            <div class="hud-top">
+              <span class="hud-badge live">LIVE</span>
+              <span class="hud-badge" id="hudTime">00:00:00</span>
+              <span class="hud-badge" id="hudCam">CAM 1</span>
+              <span
+                class="hud-badge"
+                id="hudAiBadge"
+                style="
+                  background: rgba(0, 255, 136, 0.2);
+                  border: 1px solid #00ff88;
+                  color: #00ff88;
+                  opacity: 0;
+                  transition:
+                    opacity 0.3s,
+                    transform 0.3s;
+                  transform: translateY(-4px);
+                "
+                >AI ON</span
+              >
+            </div>
+            <div class="hud-crosshair"></div>
+            <div class="hud-bottom">
+              <span class="hud-timestamp" id="hudDate">--</span>
+              <span class="hud-badge" id="hudSpeed">1.5 m/s</span>
+            </div>
+          </div>
+          <div class="video-controls">
+            <button
+              class="vcbtn"
+              id="aiToggleBtn"
+              onclick="toggleAI()"
+              title="Toggle AI"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle cx="12" cy="12" r="3" />
+                <path
+                  d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"
+                />
+              </svg>
+            </button>
+            <button
+              class="vcbtn"
+              onclick="toggleFullscreen()"
+              title="Fullscreen"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <polyline points="15 3 21 3 21 9" />
+                <polyline points="9 21 3 21 3 15" />
+                <line x1="21" y1="3" x2="14" y2="10" />
+                <line x1="3" y1="21" x2="10" y2="14" />
+              </svg>
+            </button>
+            <button
+              class="vcbtn"
+              onclick="switchCamera()"
+              title="Switch Camera"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M23 4v6h-6" />
+                <path d="M1 20v-6h6" />
+                <path
+                  d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── TELEMETRY (2-col grid) ── -->
+      <section class="seg seg-text" aria-label="Telemetry">
+        <div class="panel-header">
+          <svg
+            class="panel-title-icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+          </svg>
+          <span class="panel-title">Telemetry</span>
+        </div>
+        <div class="data-scroll">
+          <!-- Throttle (thr) -->
+          <div class="metric-card">
+            <div class="metric-label">Throttle</div>
+            <div class="metric-row">
+              <span class="metric-val" id="valThr">--</span>
+              <span class="metric-unit">%</span>
+            </div>
+            <div class="metric-bar">
+              <div class="metric-bar-fill" id="barThr" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <!-- Steering (str) -->
+          <div class="metric-card">
+            <div class="metric-label">Steering</div>
+            <div class="metric-row">
+              <span class="metric-val" id="valStr">--</span>
+              <span class="metric-unit">%</span>
+            </div>
+            <div class="metric-bar">
+              <div class="metric-bar-fill" id="barStr" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <!-- Heading (IMU) -->
+          <div class="metric-card full">
+            <div class="metric-label">Heading (IMU)</div>
+            <div class="compass-wrap" style="margin-top: 2px">
+              <div class="compass">
+                <div class="compass-needle" id="compassNeedle"></div>
+                <div class="compass-center"></div>
+              </div>
+              <div>
+                <div class="metric-row">
+                  <span class="metric-val" id="valHeading">--</span>
+                  <span class="metric-unit">°</span>
+                </div>
+                <div
+                  style="
+                    font-family: &quot;Share Tech Mono&quot;, monospace;
+                    font-size: 7px;
+                    color: var(--text-dim);
+                    margin-top: 1px;
+                  "
+                  id="valCardinal"
+                >
+                  --
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Conveyor direction + actual -->
+          <div class="metric-card" id="cardConveyor">
+            <div class="metric-label">Conveyor</div>
+            <div class="metric-row">
+              <span class="metric-val" id="valConv">--</span>
+              <span class="metric-unit" id="valConvDir"></span>
+            </div>
+            <div style="margin-top: 3px">
+              <span class="metric-status off" id="statConveyor">OFF</span>
+            </div>
+          </div>
+
+          <!-- Conveyor direction -->
+          <div class="metric-card" id="cardConvDir">
+            <div class="metric-label">Conv. Direction</div>
+            <div class="metric-row">
+              <span class="metric-val" id="valConvDirDisplay">--</span>
+            </div>
+            <div style="margin-top: 3px">
+              <span class="metric-status off" id="statConvDir">IDLE</span>
+            </div>
+          </div>
+
+          <!-- E-Stop status — full width, danger when active -->
+          <div class="metric-card full" id="cardEstop">
+            <div class="metric-label">E-Stop</div>
+            <div class="metric-row">
+              <span class="metric-val" id="valEstop">--</span>
+              <span class="metric-status off" id="statEstop">--</span>
+            </div>
+          </div>
+
+          <!-- Overflow -->
+          <div class="metric-card" id="cardOverflow">
+            <div class="metric-label">Overflow</div>
+            <div class="metric-row">
+              <span class="metric-val" id="valOverflow">--</span>
+            </div>
+            <div style="margin-top: 3px">
+              <span class="metric-status off" id="statOverflow">--</span>
+            </div>
+          </div>
+
+          <!-- RC Lost -->
+          <div class="metric-card" id="cardRcLost">
+            <div class="metric-label">RC Signal</div>
+            <div class="metric-row">
+              <span class="metric-val" id="valRcLost">--</span>
+            </div>
+            <div style="margin-top: 3px">
+              <span class="metric-status off" id="statRcLost">--</span>
+            </div>
+          </div>
+
+          <!-- GPS fix + sats — full width -->
+          <div class="metric-card full" id="cardGps">
+            <div class="metric-label">GPS</div>
+            <div class="metric-row">
+              <span class="metric-val" id="valGpsFix">--</span>
+              <span class="metric-unit">fix</span>
+              <span class="metric-status off" id="statGps">NO FIX</span>
+            </div>
+            <div
+              style="
+                font-family: &quot;Share Tech Mono&quot;, monospace;
+                font-size: 7px;
+                color: var(--text-dim);
+                margin-top: 2px;
+              "
+            >
+              SATS: <span id="valGpsSats">--</span>
+            </div>
+          </div>
+
+          <!-- Runtime -->
+          <div class="metric-card">
+            <div class="metric-label">Runtime</div>
+            <div class="metric-row">
+              <span class="metric-val" id="valRuntime">00:00</span>
+            </div>
+            <div style="margin-top: 3px">
+              <span class="metric-status on">ACTIVE</span>
+            </div>
+          </div>
+
+          <!-- UNO timestamp -->
+          <div class="metric-card">
+            <div class="metric-label">Last UNO Msg</div>
+            <div class="metric-row">
+              <span class="metric-val" style="font-size: 11px" id="valUnoTs"
+                >--</span
+              >
+            </div>
+            <div style="margin-top: 3px">
+              <span class="metric-status on" id="statUnoTs">OK</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── MAP ── -->
+      <section class="seg seg-map" aria-label="Navigation map">
+        <div class="map-inner">
+          <div id="gmap" style="width: 100%; height: 100%"></div>
+          <div class="map-coords" id="mapCoords" style="z-index: 10">
+            LAT --°N<br />LON --°W
+          </div>
+          <div class="map-label" style="z-index: 10">GPS TRACK</div>
+        </div>
+      </section>
+    </main>
+    <script>
+      // ── CONFIG ────────────────────────────────────────────────────────────────
+      // Change this to your VPS Tailscale IP or hostname when deploying.
+      // Example: 'ws://100.64.0.2:8000/ws'
+      const WS_URI = "ws://100.82.101.38:8000/ws";
+
+      // ── CLOCK ─────────────────────────────────────────────────────────────────
+      function updateClock() {
+        const n = new Date();
+        document.getElementById("hudTime").textContent = n
+          .toTimeString()
+          .slice(0, 8);
+        document.getElementById("hudDate").textContent =
+          n.toLocaleDateString("en-CA") + " UTC";
+      }
+      setInterval(updateClock, 1000);
+      updateClock();
+
+      // ── RUNTIME COUNTER ───────────────────────────────────────────────────────
+      let rt = 0;
+      setInterval(() => {
+        rt++;
+        document.getElementById("valRuntime").textContent =
+          String(Math.floor(rt / 60)).padStart(2, "0") +
+          ":" +
+          String(rt % 60).padStart(2, "0");
+      }, 1000);
+
+      // ── UI UPDATER ────────────────────────────────────────────────────────────
+      // Accepts the full nested packet from uno_pi_integration.py:
+      // { ts, uno: { thr, str, conv, conv_dir, conv_actual, conv_actual_dir,
+      //              estop, overflow, rc_lost, ts },
+      //   gps: { lat, lon, fix, sats },
+      //   imu: { heading } }
+      function applyTelemetry(d) {
+        if (d.detections !== undefined) {
+          lastBoxes = d.detections;
+          drawBoxes(lastBoxes);
+        }
+
+        const uno = d.uno || {};
+        const gps = d.gps || {};
+        const imu = d.imu || {};
+
+        // ── Throttle ──────────────────────────────────────────────────────────
+        if (uno.thr !== null && uno.thr !== undefined) {
+          const thr = parseFloat(uno.thr);
+          document.getElementById("valThr").textContent = thr.toFixed(0);
+          document.getElementById("barThr").style.width =
+            Math.min(Math.abs(thr), 100) + "%";
+          // Mirror throttle % to the video HUD speed badge
+          document.getElementById("hudSpeed").textContent =
+            thr.toFixed(0) + "%";
+        }
+
+        // ── Steering ──────────────────────────────────────────────────────────
+        if (uno.str !== null && uno.str !== undefined) {
+          const str = parseFloat(uno.str);
+          document.getElementById("valStr").textContent = str.toFixed(0);
+          document.getElementById("barStr").style.width =
+            Math.min(Math.abs(str), 100) + "%";
+        }
+
+        // ── Heading (IMU) ─────────────────────────────────────────────────────
+        if (imu.heading !== null && imu.heading !== undefined) {
+          const hdg = parseFloat(imu.heading);
+          lastHeading = hdg;
+          document.getElementById("valHeading").textContent = hdg.toFixed(1);
+          document.getElementById("compassNeedle").style.transform =
+            `translateX(-50%) translateY(-100%) rotate(${hdg}deg)`;
+          document.getElementById("valCardinal").textContent = [
+            "N",
+            "NE",
+            "E",
+            "SE",
+            "S",
+            "SW",
+            "W",
+            "NW",
+          ][Math.round(hdg / 45) % 8];
+          // Refresh the marker icon with the latest heading even if GPS hasn't moved
+          if (boatMarker) {
+            if (lastLat !== null) {
+              updateMap(lastLat, lastLon, hdg); // re-call updateMap with latest coords + new heading
+            } else {
+              boatMarker.setIcon(buildBoatIcon(hdg)); // no GPS yet, just rotate icon
+            }
+          }
+        }
+
+        // ── Conveyor (commanded) ──────────────────────────────────────────────
+        if (uno.conv !== null && uno.conv !== undefined) {
+          const convVal = uno.conv;
+          const convDir = uno.conv_dir || "";
+          const isOn = convVal !== 0 && convVal !== null;
+          document.getElementById("valConv").textContent = convVal ?? "--";
+          document.getElementById("valConvDir").textContent = convDir;
+          const sc = document.getElementById("statConveyor");
+          sc.textContent = isOn ? "ON" : "OFF";
+          sc.className = isOn ? "metric-status on" : "metric-status off";
+          document.getElementById("cardConveyor").className =
+            "metric-card" + (isOn ? " active" : "");
+        }
+
+        // ── Conveyor direction ────────────────────────────────────────────────
+        if (uno.conv_dir !== null && uno.conv_dir !== undefined) {
+          const dir = uno.conv_dir || "--";
+          const isMoving = uno.conv !== 0 && uno.conv !== null;
+          document.getElementById("valConvDirDisplay").textContent = dir;
+          const sd = document.getElementById("statConvDir");
+          sd.textContent = isMoving ? "RUNNING" : "IDLE";
+          sd.className = isMoving ? "metric-status on" : "metric-status off";
+        }
+
+        // ── E-Stop ────────────────────────────────────────────────────────────
+        if (uno.estop !== null && uno.estop !== undefined) {
+          const estopActive = !!uno.estop;
+          document.getElementById("valEstop").textContent = estopActive
+            ? "ACTIVE"
+            : "CLEAR";
+          const se = document.getElementById("statEstop");
+          se.textContent = estopActive ? "HALT" : "OK";
+          se.className = estopActive
+            ? "metric-status warn"
+            : "metric-status on";
+          document.getElementById("cardEstop").className =
+            "metric-card full" + (estopActive ? " danger" : "");
+        }
+
+        // ── Overflow ──────────────────────────────────────────────────────────
+        if (uno.overflow !== null && uno.overflow !== undefined) {
+          const ovf = !!uno.overflow;
+          document.getElementById("valOverflow").textContent = ovf
+            ? "YES"
+            : "NO";
+          const so = document.getElementById("statOverflow");
+          so.textContent = ovf ? "ALERT" : "OK";
+          so.className = ovf ? "metric-status warn" : "metric-status on";
+          document.getElementById("cardOverflow").className =
+            "metric-card" + (ovf ? " warn" : "");
+        }
+
+        // ── RC Lost ───────────────────────────────────────────────────────────
+        if (uno.rc_lost !== null && uno.rc_lost !== undefined) {
+          const rcLost = !!uno.rc_lost;
+          document.getElementById("valRcLost").textContent = rcLost
+            ? "LOST"
+            : "OK";
+          const sr = document.getElementById("statRcLost");
+          sr.textContent = rcLost ? "NO SIG" : "LINK";
+          sr.className = rcLost ? "metric-status warn" : "metric-status on";
+          document.getElementById("cardRcLost").className =
+            "metric-card" + (rcLost ? " danger" : "");
+        }
+
+        // ── GPS ───────────────────────────────────────────────────────────────
+        if (gps.lat !== null && gps.lat !== undefined) {
+          const lat = parseFloat(gps.lat);
+          const lon = parseFloat(gps.lon);
+          const hdg =
+            imu.heading !== null && imu.heading !== undefined
+              ? parseFloat(imu.heading)
+              : lastHeading || 0;
+          document.getElementById("mapCoords").innerHTML =
+            `LAT ${lat.toFixed(4)}°N<br>LON ${lon.toFixed(4)}°W`;
+          updateMap(lat, lon, hdg);
+        }
+        if (gps.fix !== undefined) {
+          const hasFix = gps.fix > 0;
+          document.getElementById("valGpsFix").textContent = gps.fix ?? "--";
+          document.getElementById("valGpsSats").textContent = gps.sats ?? "--";
+          const sg = document.getElementById("statGps");
+          sg.textContent = hasFix ? "FIX" : "NO FIX";
+          sg.className = hasFix ? "metric-status on" : "metric-status warn";
+          document.getElementById("cardGps").className =
+            "metric-card full" + (hasFix ? "" : " warn");
+        }
+
+        // ── UNO timestamp (shows age of last UNO packet) ──────────────────────
+        if (uno.ts !== null && uno.ts !== undefined) {
+          const age = (Date.now() / 1000 - parseFloat(uno.ts)).toFixed(1);
+          document.getElementById("valUnoTs").textContent = age + "s ago";
+          const stale = parseFloat(age) > 2;
+          const st = document.getElementById("statUnoTs");
+          st.textContent = stale ? "STALE" : "OK";
+          st.className = stale ? "metric-status warn" : "metric-status on";
+        }
+
+        // ── MISSING DATA CHECK ────────────────────────────────────────────────
+        // Build a list of every field that is null, undefined, or stale,
+        // then surface it in the alert banner so the operator knows exactly
+        // what is missing.
+        checkMissingData(d);
+      }
+
+      // Fields to monitor — label shown in the alert + how to test each one
+      const MONITORED_FIELDS = [
+        {
+          label: "Throttle (uno.thr)",
+          test: (d) => d.uno?.thr !== null && d.uno?.thr !== undefined,
+        },
+        {
+          label: "Steering (uno.str)",
+          test: (d) => d.uno?.str !== null && d.uno?.str !== undefined,
+        },
+        {
+          label: "Conveyor (uno.conv)",
+          test: (d) => d.uno?.conv !== null && d.uno?.conv !== undefined,
+        },
+        {
+          label: "E-Stop (uno.estop)",
+          test: (d) => d.uno?.estop !== null && d.uno?.estop !== undefined,
+        },
+        {
+          label: "Overflow (uno.overflow)",
+          test: (d) =>
+            d.uno?.overflow !== null && d.uno?.overflow !== undefined,
+        },
+        {
+          label: "RC Signal (uno.rc_lost)",
+          test: (d) => d.uno?.rc_lost !== null && d.uno?.rc_lost !== undefined,
+        },
+        {
+          label: "IMU Heading (imu.heading)",
+          test: (d) => d.imu?.heading !== null && d.imu?.heading !== undefined,
+        },
+        {
+          label: "GPS Latitude (gps.lat)",
+          test: (d) => d.gps?.lat !== null && d.gps?.lat !== undefined,
+        },
+        {
+          label: "GPS Longitude (gps.lon)",
+          test: (d) => d.gps?.lon !== null && d.gps?.lon !== undefined,
+        },
+        { label: "GPS Fix (gps.fix)", test: (d) => d.gps?.fix !== undefined },
+        {
+          label: "UNO packet stale (>2s old)",
+          test: (d) => {
+            if (d.uno?.ts === null || d.uno?.ts === undefined) return false;
+            return Date.now() / 1000 - parseFloat(d.uno.ts) <= 2;
+          },
+        },
+      ];
+
+      let alertDismissed = false;
+
+      function checkMissingData(d) {
+        const missing = MONITORED_FIELDS.filter((f) => !f.test(d)).map(
+          (f) => f.label,
+        );
+
+        const banner = document.getElementById("dataAlert");
+        const fields = document.getElementById("dataAlertFields");
+
+        if (missing.length === 0) {
+          // All data present — hide banner and reset dismissed flag
+          banner.classList.remove("visible");
+          alertDismissed = false;
+        } else if (!alertDismissed) {
+          // Show banner with the list of missing fields
+          fields.innerHTML = missing.map((m) => `• ${m}`).join("<br>");
+          banner.classList.add("visible");
+        }
+      }
+
+      function dismissAlert() {
+        document.getElementById("dataAlert").classList.remove("visible");
+        alertDismissed = true;
+        // Auto-reset dismissal after 10s so it can reappear if still broken
+        setTimeout(() => {
+          alertDismissed = false;
+        }, 10000);
+      }
+
+      // ── WEBSOCKET CONNECTION ──────────────────────────────────────────────────
+      let ws = null;
+      let wsConnected = false;
+      let reconnectTimer = null;
+      let lastHeading = 0;
+
+      const statusDot = document.querySelector(".status-dot");
+      const signalBars = document.querySelectorAll(".signal-bar");
+
+      function setConnectionState(state) {
+        if (state === "connected") {
+          wsConnected = true;
+          statusDot.style.background = "var(--accent2)";
+          statusDot.style.boxShadow = "0 0 8px var(--accent2)";
+          signalBars.forEach((b, i) => b.classList.toggle("active", i < 4));
+        } else if (state === "connecting") {
+          wsConnected = false;
+          statusDot.style.background = "var(--warn)";
+          statusDot.style.boxShadow = "0 0 8px var(--warn)";
+          signalBars.forEach((b, i) => b.classList.toggle("active", i < 2));
+        } else {
+          wsConnected = false;
+          statusDot.style.background = "var(--danger)";
+          statusDot.style.boxShadow = "0 0 8px var(--danger)";
+          signalBars.forEach((b) => b.classList.remove("active"));
+        }
+      }
+
+      function connectWS() {
+        setConnectionState("connecting");
+        ws = new WebSocket(WS_URI);
+
+        ws.onopen = () => {
+          console.log("WebSocket connected:", WS_URI);
+          setConnectionState("connected");
+          if (reconnectTimer) {
+            clearTimeout(reconnectTimer);
+            reconnectTimer = null;
+          }
+          stopSimulation();
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            applyTelemetry(data);
+          } catch (e) {
+            console.warn("Could not parse telemetry message:", e);
+          }
+        };
+
+        ws.onclose = () => {
+          console.warn("WebSocket closed. Retrying in 5s...");
+          setConnectionState("disconnected");
+          startSimulation();
+          reconnectTimer = setTimeout(connectWS, 5000);
+        };
+
+        ws.onerror = (err) => {
+          console.warn("WebSocket error:", err);
+          ws.close();
+        };
+      }
+
+      // ── WEBRTC CAMERA ─────────────────────────────────────────────────────────
+      const MEDIAMTX_URL = "http://100.82.101.38:8889";
+
+      async function setupWebRTC(videoId, path) {
+        const video = document.getElementById(videoId);
+        if (!video) return;
+
+        const pc = new RTCPeerConnection({
+          iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+        });
+
+        pc.addTransceiver("video", { direction: "recvonly" });
+        pc.addTransceiver("audio", { direction: "recvonly" });
+
+        pc.ontrack = (evt) => {
+          if (evt.track.kind === "video") {
+            video.srcObject = evt.streams[0];
+          }
+        };
+
+        pc.oniceconnectionstatechange = () => {
+          console.log(`[WebRTC ${path}] ICE state: ${pc.iceConnectionState}`);
+          if (
+            pc.iceConnectionState === "failed" ||
+            pc.iceConnectionState === "disconnected"
+          ) {
+            console.warn(`[WebRTC ${path}] Reconnecting in 3s...`);
+            setTimeout(() => setupWebRTC(videoId, path), 3000);
+          }
+        };
+
+        try {
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+
+          const resp = await fetch(`${MEDIAMTX_URL}/${path}/whep`, {
+            method: "POST",
+            headers: { "Content-Type": "application/sdp" },
+            body: offer.sdp,
+          });
+
+          if (!resp.ok) {
+            console.warn(
+              `[WebRTC ${path}] WHEP failed (${resp.status}), retrying in 3s...`,
+            );
+            setTimeout(() => setupWebRTC(videoId, path), 3000);
+            return;
+          }
+
+          const answer = await resp.text();
+          await pc.setRemoteDescription({ type: "answer", sdp: answer });
+          console.log(`[WebRTC ${path}] ✅ Stream connected`);
+        } catch (err) {
+          console.error(`[WebRTC ${path}] Error:`, err);
+          setTimeout(() => setupWebRTC(videoId, path), 3000);
+        }
+      }
+      // Start both cameras
+      setupWebRTC("cam0", "cam0");
+      setupWebRTC("cam1", "cam1");
+
+      // Click PiP to swap cam0 and cam1
+      let mainIsCam0 = true; // track which physical cam is in the main slot
+
+      document.getElementById("pipContainer").addEventListener("click", () => {
+        const main = document.getElementById("cam0");
+        const pip = document.getElementById("cam1");
+        const mainSrc = main.srcObject;
+        main.srcObject = pip.srcObject;
+        pip.srcObject = mainSrc;
+
+        mainIsCam0 = !mainIsCam0;
+
+        const hudCam = document.getElementById("hudCam");
+        hudCam.textContent = mainIsCam0 ? "CAM 1" : "CAM 2";
+
+        // Redraw or clear boxes depending on which cam is now main
+        if (aiEnabled) {
+          drawBoxes(lastBoxes);
+        }
+      });
+
+      // ── FALLBACK SIMULATION ───────────────────────────────────────────────────
+      // Mirrors the exact packet shape from uno_pi_integration.py so the UI
+      // renders correctly while the Pi is not connected.
+      let simInterval = null;
+      let simHeading = 45.0;
+      let simThr = 60;
+
+      function simUpdate() {
+        simHeading = (simHeading + (Math.random() - 0.5) * 3 + 360) % 360;
+        simThr = Math.max(0, Math.min(100, simThr + (Math.random() - 0.5) * 5));
+
+        applyTelemetry({
+          ts: Date.now() / 1000,
+          uno: {
+            thr: parseFloat(simThr.toFixed(1)),
+            str: parseFloat((45 + (Math.random() - 0.5) * 10).toFixed(1)),
+            conv: 1,
+            conv_dir: "FWD",
+            conv_actual: 1,
+            conv_actual_dir: "FWD",
+            estop: 0,
+            overflow: 0,
+            rc_lost: 0,
+            ts: Date.now() / 1000 - Math.random() * 0.5,
+          },
+          gps: {
+            lat: 45.5017 + (Math.random() - 0.5) * 0.0002,
+            lon: -73.5673 + (Math.random() - 0.5) * 0.0002,
+            fix: 3,
+            sats: 8,
+          },
+          imu: {
+            heading: parseFloat(simHeading.toFixed(2)),
+          },
+        });
+      }
+
+      function startSimulation() {
+        if (!simInterval) simInterval = setInterval(simUpdate, 2000);
+      }
+      function stopSimulation() {
+        if (simInterval) {
+          clearInterval(simInterval);
+          simInterval = null;
+        }
+      }
+
+      // ── GOOGLE MAPS MINIMAP ───────────────────────────────────────────────────
+      let gmap = null;
+      let boatMarker = null;
+      let trackLine = null;
+      let trackCoords = [];
+      let lastLat = null;
+      let lastLon = null;
+
+      // Builds an SVG data URL for the boat marker.
+      // It's a circle with a directional cone pointing forward — like a video game minimap.
+      function buildBoatIcon(headingDeg) {
+        const size = 48;
+        const cx = size / 2;
+        const cy = size / 2;
+        const r = 8; // body radius
+        const coneL = 18; // how far the cone extends
+        const coneW = 22; // cone spread angle in degrees
+
+        // Cone tip point (forward direction)
+        const tipRad = ((headingDeg - 90) * Math.PI) / 180;
+        const tipX = cx + Math.cos(tipRad) * (r + coneL);
+        const tipY = cy + Math.sin(tipRad) * (r + coneL);
+
+        // Two base points of the cone (on the circle edge)
+        const la = ((headingDeg - 90 - coneW) * Math.PI) / 180;
+        const ra = ((headingDeg - 90 + coneW) * Math.PI) / 180;
+        const lx = cx + Math.cos(la) * r;
+        const ly = cy + Math.sin(la) * r;
+        const rx = cx + Math.cos(ra) * r;
+        const ry = cy + Math.sin(ra) * r;
+
+        const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
+        <defs>
+          <radialGradient id="coneGrad" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#ff3333" stop-opacity="0.5"/>
+            <stop offset="100%" stop-color="#00ffa3" stop-opacity="0"/>
+          </radialGradient>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="2" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <!-- Heading cone -->
+        <polygon points="${lx},${ly} ${tipX},${tipY} ${rx},${ry}"
+                 fill="url(#coneGrad)" stroke="rgba(255,50,50,0.6)" stroke-width="0.8"/>
+        <!-- Boat body -->
+        <circle cx="${cx}" cy="${cy}" r="${r}"
+                fill="#ff3333" stroke="rgba(255,50,50,0.9)" stroke-width="1.5"
+                filter="url(#glow)"/>
+        <!-- Center dot -->
+        <circle cx="${cx}" cy="${cy}" r="2.5" fill="#060b14"/>
+      </svg>`;
+
+        return {
+          url: "data:image/svg+xml;charset=UTF-8," + encodeURIComponent(svg),
+          scaledSize: new google.maps.Size(size, size),
+          anchor: new google.maps.Point(cx, cy),
+        };
+      }
+
+      function initMap() {
+        const defaultPos = { lat: 45.491667, lng: -73.554444 }; // Montreal fallback
+
+        gmap = new google.maps.Map(document.getElementById("gmap"), {
+          center: defaultPos,
+          zoom: 17,
+          mapTypeId: "roadmap",
+          disableDefaultUI: true, // hides all default Google UI
+          gestureHandling: "greedy", // single-finger pan works
+          styles: [
+            // Subtle blue tint to match the dark dashboard aesthetic
+            { elementType: "labels", stylers: [{ visibility: "off" }] },
+          ],
+        });
+
+        // Boat marker — starts at default, updates with real GPS
+        boatMarker = new google.maps.Marker({
+          position: defaultPos,
+          map: gmap,
+          icon: buildBoatIcon(0),
+          zIndex: 10,
+        });
+
+        // Polyline for the GPS trail
+        trackLine = new google.maps.Polyline({
+          path: [],
+          geodesic: true,
+          strokeColor: "#00c8ff",
+          strokeOpacity: 0.6,
+          strokeWeight: 2,
+          map: gmap,
+        });
+      }
+
+      function updateMap(lat, lon, headingDeg) {
+        if (!gmap || !boatMarker) return;
+
+        const pos = { lat, lng: lon };
+
+        // Move marker and rotate its icon
+        boatMarker.setPosition(pos);
+        boatMarker.setIcon(buildBoatIcon(headingDeg));
+
+        // Only re-center if the boat has moved more than ~2m
+        const moved =
+          lastLat === null ||
+          Math.abs(lat - lastLat) > 0.00002 ||
+          Math.abs(lon - lastLon) > 0.00002;
+
+        if (moved) {
+          gmap.panTo(pos);
+          trackCoords.push(pos);
+          trackLine.setPath(trackCoords);
+          lastLat = lat;
+          lastLon = lon;
+        }
+
+        // Update the coords overlay
+        document.getElementById("mapCoords").innerHTML =
+          `LAT ${lat.toFixed(5)}°N<br>LON ${Math.abs(lon).toFixed(5)}°W`;
+      }
+
+      // ── BOOT ──────────────────────────────────────────────────────────────────
+      // Start simulation immediately so the UI has data while connecting,
+      // then attempt WebSocket — simulation stops automatically on success.
+      startSimulation();
+      connectWS();
+
+      // ── NAV ───────────────────────────────────────────────────────────────────
+      function setView(btn) {
+        document
+          .querySelectorAll(".menu-btn")
+          .forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+      }
+
+      // ── VIDEO CONTROLS ────────────────────────────────────────────────────────
+      function toggleFullscreen() {
+        const v = document.querySelector(".seg-video");
+        if (!document.fullscreenElement) v.requestFullscreen?.();
+        else document.exitFullscreen?.();
+      }
+      let camIdx = 0;
+      function switchCamera() {
+        camIdx = (camIdx + 1) % 3;
+        document.getElementById("hudCam").textContent = "CAM " + (camIdx + 1);
+      }
+      // ── AI Overlay ──────────────────────────────────────────────────────────
+      let aiEnabled = false;
+      let lastBoxes = [];
+      const aiCanvas = document.getElementById("aiCanvas");
+      const aiCtx = aiCanvas.getContext("2d");
+
+      function toggleAI() {
+        aiEnabled = !aiEnabled;
+        const btn = document.getElementById("aiToggleBtn");
+        aiCanvas.style.display = aiEnabled ? "block" : "none";
+        btn.classList.toggle("ai-active", aiEnabled);
+
+        const badge = document.getElementById("hudAiBadge");
+        if (badge) {
+          badge.style.opacity = aiEnabled ? "1" : "0";
+          badge.style.transform = aiEnabled
+            ? "translateY(0)"
+            : "translateY(-4px)";
+        }
+
+        if (aiEnabled) {
+          drawBoxes(lastBoxes); // immediately redraw with latest boxes
+        } else {
+          aiCtx.clearRect(0, 0, aiCanvas.width, aiCanvas.height);
+        }
+      }
+
+      function drawBoxes(boxes) {
+        aiCanvas.width = aiCanvas.offsetWidth;
+        aiCanvas.height = aiCanvas.offsetHeight;
+        aiCtx.clearRect(0, 0, aiCanvas.width, aiCanvas.height);
+
+        // Only draw if AI is on AND cam0 (the inference camera) is in the main view
+        if (!aiEnabled || !mainIsCam0 || !boxes || boxes.length === 0) return;
+
+        const scaleX = aiCanvas.width / 1280;
+        const scaleY = aiCanvas.height / 720;
+
+        boxes.forEach((b) => {
+          const x1 = (b.x - b.width / 2) * scaleX;
+          const y1 = (b.y - b.height / 2) * scaleY;
+          const w = b.width * scaleX;
+          const h = b.height * scaleY;
+          const label = b.class + " " + Math.round(b.confidence * 100) + "%";
+
+          aiCtx.strokeStyle = "#00ff88";
+          aiCtx.lineWidth = 2;
+          aiCtx.strokeRect(x1, y1, w, h);
+
+          aiCtx.font = "bold 13px sans-serif";
+          const textW = aiCtx.measureText(label).width;
+          aiCtx.fillStyle = "rgba(0,0,0,0.55)";
+          aiCtx.fillRect(x1, y1 - 20, textW + 8, 20);
+          aiCtx.fillStyle = "#00ff88";
+          aiCtx.fillText(label, x1 + 4, y1 - 5);
+        });
+      }
+    </script>
+  </body>
+</html>

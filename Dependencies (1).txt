@@ -1,0 +1,73 @@
+##System Dependency
+#Python 3.11.9, docker, ffmpeg, libcamera-apps/rpicam-vid, Raspberry Pi camera support, 
+#Needed instructions on python 3.11.9 install, docker & Tailscale
+
+
+##System Packages
+sudo apt update
+sudo apt install -y ffmpeg libcamera-apps python3-venv python3-pip
+//Localize 3.11.9 to Cappy
+
+##Install pyenv dependencies
+sudo apt install -y make build-essential libssl-dev zlib1g-dev \
+libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm \
+libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev \
+libffi-dev liblzma-dev
+
+##install pyenv
+curl https://pyenv.run | bash
+
+##Add pyenv to your shell
+echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
+echo 'export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
+echo 'eval "$(pyenv init -)"' >> ~/.bashrc
+source ~/.bashrc
+
+##Install Python 3.11.9
+pyenv install 3.11.9
+
+##Create the venv using Python 3.11.9 localized to Cappy
+rm -rf ~/Cappy/.venv
+cd ~/Cappy
+pyenv local 3.11.9
+python -m venv .venv --system-site-packages
+source .venv/bin/activate
+
+##Dependency Installs
+pip install -U numpy opencv-python websockets pyserial pynmea2 adafruit-blinka adafruit-circuitpython-bno055
+
+##Dependency Installs for Comp vision
+pip install -U inference-sdk
+pip install -U inference-cli
+#Dont do this one: pip install picamera2 inference
+
+##installing docker
+##remove old docker files:
+sudo apt remove -y docker docker-engine docker.io containerd runc
+
+##enabling docker on the pi:
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker $USER
+newgrp docker
+
+##setup tailscale
+##installing tailscale
+curl -fsSL https://tailscale.com/install.sh | sh
+
+##start and authenticate tailscale
+sudo tailscale up
+
+##make tailscale start automatically on reboot
+sudo systemctl enable tailscaled
+
+
+__________________________________________
+### USEFUL CMDs
+
+##List Dependencies
+pip list
+
+##Run code
+inference server start
+python shared_state.py
+
